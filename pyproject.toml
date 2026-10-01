@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "matrixgrad"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = ["numpy", "tiktoken", "datasets", "tqdm"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["matrixgrad", "cudagrad", "cudagrad.kernels"]
+
+[tool.setuptools.package-data]
+"cudagrad.kernels" = ["*.cu"]
