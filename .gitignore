@@ -4,3 +4,6 @@ __pycache__/
 .DS_Store
 data/*/
 checkpoints/
+site/matrixgrad/
+site/data/
+site/recorded/
