@@ -1,5 +1,6 @@
 import { createArch } from './arch.js';
 import { createBatch, createBlock } from './batch.js';
+import { createGenerate } from './generate.js';
 import { COLOR, decode, fitCanvas } from './heat.js';
 import { attentionThumb, createMicro, sameView } from './micro.js';
 
@@ -12,11 +13,11 @@ const PHONE = matchMedia('(pointer: coarse) and (max-width: 820px)').matches;
 
 const worker = new Worker('worker.js');
 const recorded = fetch('recorded/run.json').then(r => r.json());
-let snapshots, redraw = 0;
+let snapshots, redraw = 0, generateVisible = false;
 
 // engine: booting -> ready -> live. Until it is live, Train replays the Recorded Trace.
 const state = {
-  info: null, engine: 'booting', running: false, step: 0, replayId: 0,
+  info: null, engine: 'booting', running: false, generating: false, resumeAfterGenerate: false, step: 0, replayId: 0,
   losses: [], norms: [], attention: {}, batch: null,
   sel: { component: 'b0.attn', row: 0, head: 0 },
 };
@@ -33,8 +34,29 @@ const micro = createMicro({
   onPassStart: () => state.running && requestTrace(),
 });
 
+const generate = createGenerate({
+  form: $('prompt'), input: $('prompt-text'), button: $('gen-btn'), out: $('gen-out'), bars: $('bars'), stat: $('gen-stat'),
+}, worker, {
+  onStart() {
+    state.resumeAfterGenerate = state.running;
+    state.generating = true;
+    pause();
+  },
+  onEnd() {
+    state.generating = false;
+    if (state.resumeAfterGenerate) start();
+    render();
+  },
+});
+
+new IntersectionObserver(([e]) => {
+  generateVisible = e.isIntersecting;
+  if (generateVisible && state.engine !== 'booting') generate.load();
+}, { rootMargin: '600px' }).observe($('generate'));
+
 function render() {
-  $('train-btn').textContent = state.running ? 'Pause' : state.step ? 'Keep training' : 'Train';
+  $('train-btn').disabled = state.generating;
+  $('train-btn').textContent = state.generating ? 'Paused for Generate' : state.running ? 'Pause' : state.step ? 'Keep training' : 'Train';
   $('badge').textContent = state.engine === 'live' ? 'live' : 'recorded';
   $('badge').classList.toggle('live', state.engine === 'live');
   redraw = 30;
@@ -161,7 +183,11 @@ worker.onmessage = ({ data: m }) => {
   if (m.type === 'ready') {
     if (state.engine === 'booting') state.engine = 'ready';
     if (!state.running) requestTrace();
+    if (generateVisible) generate.load();
   }
+  if (m.type === 'modelReady') generate.modelReady();
+  if (m.type === 'token') generate.token(m);
+  if (m.type === 'generated') generate.generated();
   if (m.type === 'step') onStep(m);
   if (m.type === 'trace') onTrace(m);
   if (m.type === 'sample') onSample(m);

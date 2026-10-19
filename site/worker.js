@@ -2,11 +2,11 @@ importScripts('https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js');
 
 const SOURCES = [
   'matrixgrad/__init__.py', 'matrixgrad/backend.py', 'matrixgrad/engine.py', 'matrixgrad/nn.py', 'matrixgrad/optimizer.py',
-  'py/recorder.py', 'py/train.py',
+  'py/recorder.py', 'py/train.py', 'py/generate.py',
 ];
 const SAMPLE_EVERY = 100;
 
-let py, trainer, running = false, traceRequest = null;
+let py, trainer, generator, running = false, generating = false, traceRequest = null;
 
 async function boot() {
   py = await loadPyodide();
@@ -28,6 +28,18 @@ function postTrace(step, trace) {
   view.release();
   proxy.destroy();
   postMessage({ type: 'trace', step, ...trace, buf }, [buf.buffer]);
+}
+
+async function generate(n) {
+  generating = true;
+  for (let i = 0; i < n && generating; i++) {
+    const t0 = performance.now();
+    const token = JSON.parse(generator.next());
+    postMessage({ type: 'token', ...token, ms: performance.now() - t0 });
+    await new Promise(r => setTimeout(r));
+  }
+  generating = false;
+  postMessage({ type: 'generated' });
 }
 
 async function loop() {
@@ -56,6 +68,15 @@ const actions = {
     const out = trainer.trace_now(py.toPy([m.component, m.row, m.head]));
     postTrace(trainer.step, JSON.parse(out).trace);
   },
+  loadModel(m) {
+    generator = py.runPython('from generate import Generator; Generator')(py.toPy(new Uint8Array(m.weights)), m.meta);
+    postMessage({ type: 'modelReady' });
+  },
+  generate(m) {
+    generator.start(py.toPy(m.ids));
+    generate(m.n);
+  },
+  stop() { generating = false; },
   traceAt(m) {
     const out = trainer.trace_at(py.toPy(new Uint8Array(m.weights)), py.toPy(m.ix), py.toPy([m.component, m.row, m.head]));
     postTrace(m.step, JSON.parse(out).trace);

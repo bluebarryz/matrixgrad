@@ -57,6 +57,21 @@
       </div>
     </div>
   </section>
+
+  <section id="generate">
+    <div class="head"><span class="eyebrow">Generate</span><h2>Prompt the 16M model</h2></div>
+    <div class="stage">
+      <form class="prompt" id="prompt">
+        <input id="prompt-text" value="The history of" aria-label="Prompt" autocomplete="off">
+        <button class="btn" id="gen-btn" disabled>Generate</button>
+      </form>
+      <div class="gen">
+        <div id="gen-out"></div>
+        <div class="bars" id="bars"></div>
+      </div>
+      <span class="cap" id="gen-stat">16M parameters, pretrained on OpenWebText with matrixgrad</span>
+    </div>
+  </section>
 </main>
 
 <script type="module" src="src/main.js"></script>

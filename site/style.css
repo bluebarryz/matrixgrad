@@ -95,3 +95,19 @@ section { display: grid; gap: 16px; }
 .side { gap: 12px; }
 #loss { width: 100%; aspect-ratio: 16 / 6; }
 .sample { font: 12px var(--mono); white-space: pre-wrap; background: #000; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-height: 120px; color: #d6d3cc; }
+
+.prompt { display: flex; gap: 10px; }
+.prompt input { flex: 1; min-width: 0; height: 38px; background: #000; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; font: 14px var(--mono); }
+.gen { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 760px) { .gen { grid-template-columns: minmax(0, 1fr); } }
+#gen-out { font: 18px/1.6 var(--serif); min-height: 150px; white-space: pre-wrap; }
+#gen-out .p, #gen-out .wait { color: var(--muted); }
+#gen-out .wait { font: 12px var(--mono); }
+#gen-out .t:nth-child(odd) { border-bottom: 1px solid rgba(88, 196, 221, .45); }
+#gen-out .t:nth-child(even) { border-bottom: 1px solid rgba(242, 207, 74, .45); }
+.bars { display: grid; gap: 6px; font: 12px var(--mono); align-content: start; }
+.pbar { display: grid; grid-template-columns: 90px minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
+.pbar .fill { height: 10px; border-radius: 2px; background: rgba(88, 196, 221, .6); }
+.pbar.pick .fill { background: var(--yellow); }
+.pbar .w { white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.pbar .n { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
