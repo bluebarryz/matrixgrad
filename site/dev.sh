@@ -1,8 +1,6 @@
 #!/bin/sh
-# Serve the site locally with the same files CI bundles into it.
+# Builds the site and serves it locally.
 set -e
 cd "$(dirname "$0")"
-rm -rf matrixgrad && cp -r ../matrixgrad matrixgrad
-[ -f data/shakespeare.txt ] || curl -sSfL --create-dirs -o data/shakespeare.txt \
-  https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
+./build.sh
 python3 -m http.server "${1:-8000}"
