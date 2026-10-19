@@ -11,11 +11,13 @@ export function createGenerate(el, worker, { onStart, onEnd }) {
   async function load() {
     if (loading) return;
     loading = true;
+    const res = await fetch('model/gpt.json');
+    if (!res.ok) return el.out.replaceChildren(span('wait', 'The pretrained model is coming soon.'));
     el.out.replaceChildren(span('wait', 'loading model…'));
     const [{ Tiktoken }, { default: ranks }, meta] = await Promise.all([
       import(`${TIKTOKEN}/lite/+esm`),
       import(`${TIKTOKEN}/dist/ranks/gpt2.js/+esm`),
-      fetch('model/gpt.json').then(r => r.json()),
+      res.json(),
     ]);
     enc = new Tiktoken(ranks);
     const weights = new Uint8Array(meta.bytes), reader = (await fetch('model/gpt.bin')).body.getReader();

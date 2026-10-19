@@ -24,8 +24,11 @@ jobs:
           python-version: '3.12'
       - run: pip install numpy
       - run: site/build.sh
-      - name: Fetch Generate weights
-        run: gh release download gpt-weights --pattern 'gpt.*' --dir site/model
+      - name: Fetch Generate weights, if released
+        run: |
+          if gh release view gpt-weights > /dev/null 2>&1; then
+            gh release download gpt-weights --pattern 'gpt.*' --dir site/model
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-pages-artifact@v3
