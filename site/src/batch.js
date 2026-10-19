@@ -1,7 +1,6 @@
 // The Batch as text, and the (B, T, C) tensor it becomes as a 3D block of slices.
 import { COLOR, fitCanvas, paint } from './heat.js';
 
-const VIEW_TOKENS = 16;
 const show = ch => ch === '\n' ? '↵' : ch;
 
 export function createBatch(el, hoverEl, onRow) {
@@ -34,7 +33,7 @@ export function createBatch(el, hoverEl, onRow) {
       row.innerHTML = `<span class="n">${r}</span>`;
       [...win.slice(0, -1)].forEach((ch, j) => {
         const c = document.createElement('span');
-        c.className = `c${j < VIEW_TOKENS ? ' v' : ''}${ch === '\n' ? ' nl' : ''}`;
+        c.className = ch === '\n' ? 'c nl' : 'c';
         c.dataset.j = j;
         c.textContent = show(ch);
         row.append(c);
@@ -49,7 +48,7 @@ export function createBlock(cv) {
   const face = document.createElement('canvas');
   let at = 0;
 
-  // `slice` is the followed row's first VIEW_TOKENS tokens x channels, drawn tokens-across.
+  // `slice` is the followed row's tokens x channels, drawn tokens-across.
   function setSlice(t) {
     const out = new Float32Array(t.rows * t.cols);
     for (let i = 0; i < t.rows; i++) for (let j = 0; j < t.cols; j++) out[j * t.rows + i] = t.value[i * t.cols + j];
@@ -79,20 +78,17 @@ export function createBlock(cv) {
       ctx.strokeStyle = 'rgba(134,141,151,0.28)';
       ctx.strokeRect(x, y, F, F);
       if (b !== Math.round(at)) continue;
-      const [sx, sy] = pos(at), vw = F * VIEW_TOKENS / T;
+      const [sx, sy] = pos(at);
       ctx.shadowColor = COLOR.blue;
       ctx.shadowBlur = 16;
       ctx.fillStyle = '#000';
       ctx.fillRect(sx, sy, F, F);
       ctx.shadowBlur = 0;
       ctx.imageSmoothingEnabled = false;
-      if (face.width) ctx.drawImage(face, sx, sy, vw, F);
+      if (face.width) ctx.drawImage(face, sx, sy, F, F);
       ctx.strokeStyle = COLOR.blue;
       ctx.lineWidth = 1.5;
       ctx.strokeRect(sx, sy, F, F);
-      ctx.setLineDash([3, 3]);
-      ctx.strokeRect(sx, sy, vw, F);
-      ctx.setLineDash([]);
       ctx.lineWidth = 1;
     }
     ctx.font = '11px "IBM Plex Mono", monospace';

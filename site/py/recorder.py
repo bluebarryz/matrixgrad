@@ -6,7 +6,7 @@ import numpy as np
 from matrixgrad.engine import Matrix
 from matrixgrad.nn import Block, CausalSelfAttention, Embedding, FeedForward, LayerNorm, Module
 
-ROWS, COLS = 16, 64
+SIDE = 64
 LOSS_OPS = {'reshape', 'cross_entropy'}
 
 
@@ -36,7 +36,7 @@ def grad_norms(model):
 
 
 def view(a, row, head, B, T):
-    """The slice of `a` the page draws: one batch row, one head, at most ROWS x COLS."""
+    """The slice of `a` the page draws: one batch row, one head, at most SIDE x SIDE."""
     if a.ndim >= 3 and a.shape[0] == B:
         a = a[row]
         if a.shape[0] != T:
@@ -46,7 +46,7 @@ def view(a, row, head, B, T):
     while a.ndim > 2 and a.shape[0] == 1:
         a = a[0]
     a = a.reshape(len(a), -1) if a.ndim > 1 else a.reshape(1, -1)
-    return a[:ROWS, :COLS]
+    return a[:SIDE, :SIDE]
 
 
 class Recorder:

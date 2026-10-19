@@ -45,8 +45,7 @@ section { display: grid; gap: 16px; }
 .batch .r.on { background: rgba(88, 196, 221, .12); }
 .batch .n { color: #4b5058; width: 3ch; flex: none; text-align: right; margin-right: 1ch; }
 .batch .c { color: #8f959d; }
-.batch .r.on .c { color: var(--fg); }
-.batch .r.on .c.v { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+.batch .r.on .c { color: var(--blue); }
 .batch .r.on .tag { color: var(--blue); margin-left: 1ch; }
 .batch .tag { color: transparent; }
 .batch .nl { color: #4b5058 !important; }

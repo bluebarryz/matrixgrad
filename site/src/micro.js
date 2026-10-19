@@ -33,7 +33,7 @@ export function createMicro(el, sel, { onInteract, onHead, onPassStart }) {
   function fig(data, t, mode, name, caption) {
     const d = document.createElement('div');
     d.className = 'fig';
-    const cv = heatCanvas(data, t.rows, t.cols, mode, 260, 180);
+    const cv = heatCanvas(data, t.rows, t.cols, mode, 256, 256);
     const cap = document.createElement('span');
     cap.className = 'cap';
     cap.textContent = caption ?? name;
@@ -124,7 +124,7 @@ export function createMicro(el, sel, { onInteract, onHead, onPassStart }) {
     if (thumb) heads[`${t.component}:${t.row}:${t.head}`] = thumb;
     const [title, sub] = COMPONENTS[t.component], nF = t.ops.length;
     el.title.textContent = title;
-    el.sub.textContent = `${sub} · step ${t.step} · row ${t.row}, first 16 tokens${thumb ? `, head ${t.head}` : ''}`;
+    el.sub.textContent = `${sub} · step ${t.step} · row ${t.row}${thumb ? `, head ${t.head}` : ''}`;
     el.segs.replaceChildren(...seq.map(s => Object.assign(document.createElement('div'), { className: `seg ${s.ph}` })));
     el.names.innerHTML = `<span style="flex:${nF}">forward</span><span style="flex:${nF}">backward</span>${t.after ? '<span style="flex:3;text-align:right">update</span>' : ''}`;
     el.strip.replaceChildren(...t.ops.map((op, i) => {
