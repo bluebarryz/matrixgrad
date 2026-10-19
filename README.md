@@ -1,4 +1,5 @@
 # matrixgrad
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/86feac37-19a2-46c6-8322-0649d07cb9b2" />
 
 An autograd engine written from scratch in NumPy/CuPy, used to pretrain a
 small GPT on real web text. No PyTorch or JAX.
