@@ -43,17 +43,12 @@ class Trainer:
             self.buf = np.concatenate([self.buf, self.rec.after(row, head, B, T)])
             out['trace']['after'] = True
         self.step += 1
-        return json.dumps(out | {'step': self.step, 'ix': ix.tolist()})
+        return json.dumps(out | {'step': self.step})
 
     def trace_now(self, trace):
         """Traces a fresh batch on the current weights, without training."""
         ix = np.random.randint(0, len(self.data) - T - 1, B)
         return json.dumps(self._forward_backward(ix, trace))
-
-    def trace_at(self, weights, ix, trace):
-        """Traces one batch on snapshot weights, without training."""
-        self.load(weights, np.float16, optimizer=False)
-        return json.dumps(self._forward_backward(np.asarray(ix), trace))
 
     def _forward_backward(self, ix, trace):
         windows = np.stack([self.data[i:i + T + 1] for i in ix])
@@ -72,24 +67,6 @@ class Trainer:
             out['trace'] |= {'component': component, 'row': row, 'head': head,
                              'batch': [''.join(self.chars[i] for i in w) for w in windows]}
         return out
-
-    def _arrays(self, optimizer):
-        return [p.data for p in self.params] + ([a for opt in self.opts for a in opt.m + opt.v] if optimizer else [])
-
-    def save(self, dtype=np.float32, optimizer=True):
-        return np.concatenate([a.ravel() for a in self._arrays(optimizer)]).astype(dtype)
-
-    def load(self, buf, dtype=np.float32, optimizer=True, step=None):
-        flat = np.frombuffer(buf, dtype).astype(np.float32)
-        off = 0
-        for a in self._arrays(optimizer):
-            a[...] = flat[off:off + a.size].reshape(a.shape)
-            off += a.size
-        assert off == flat.size
-        if optimizer:
-            self.step = step
-            for opt in self.opts:
-                opt.t = step
 
     def sample(self, n=160):
         out = self.model.generate(np.array([[self.stoi['\n']]]), n, temperature=0.8)

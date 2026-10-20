@@ -63,7 +63,6 @@ const actions = {
   },
   pause() { running = false; },
   trace(m) { traceRequest = m; },
-  load(m) { trainer.load(py.toPy(new Uint8Array(m.buf)), 'float32', true, m.step); },
   traceNow(m) {
     const out = trainer.trace_now(py.toPy([m.component, m.row, m.head]));
     postTrace(trainer.step, JSON.parse(out).trace);
@@ -77,10 +76,6 @@ const actions = {
     generate(m.n);
   },
   stop() { generating = false; },
-  traceAt(m) {
-    const out = trainer.trace_at(py.toPy(new Uint8Array(m.weights)), py.toPy(m.ix), py.toPy([m.component, m.row, m.head]));
-    postTrace(m.step, JSON.parse(out).trace);
-  },
 };
 
 onmessage = ({ data }) => actions[data.type](data);
