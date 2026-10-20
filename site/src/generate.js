@@ -60,7 +60,7 @@ export function createGenerate(el, worker, { onStart, onEnd }) {
       el.out.append(span('t', enc.decode([m.token])));
       bars(m);
       times.push(m.ms);
-      el.stat.textContent = `${Math.round(times.reduce((a, b) => a + b) / times.length)} ms/token · no KV cache yet`;
+      el.stat.textContent = `${Math.round(times.reduce((a, b) => a + b) / times.length)} ms/token · KV cache`;
     },
     generated() {
       running = false;
