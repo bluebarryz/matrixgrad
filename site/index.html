@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>matrixgrad</title>
+<meta name="description" content="An autograd engine and GPT written from scratch, training live in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=STIX+Two+Text:ital,wght@0,500;1,500&display=swap">
+<link rel="stylesheet" href="style.css">
+
+<main class="wrap">
+  <header>
+    <h1>matrixgrad</h1>
+    <p class="lede">An autograd engine and GPT written from scratch, running in your browser.
+      <a href="https://github.com/bluebarryz/matrixgrad">Source</a></p>
+  </header>
+
+  <section id="train">
+    <div class="head"><span class="eyebrow">Train</span><h2>Train a GPT from scratch</h2></div>
+    <div class="stage">
+      <div class="bar">
+        <button class="btn" id="train-btn" disabled>Train</button>
+        <span class="status" id="status"></span>
+        <span class="badge" id="badge"></span>
+      </div>
+      <div class="scroll"><canvas id="arch"></canvas></div>
+
+      <div class="inrow">
+        <div class="batchwrap">
+          <span class="cap" id="batch-cap"></span>
+          <div class="batch" id="batch"></div>
+          <span class="cap" id="batch-hover">&nbsp;</span>
+        </div>
+        <span class="sym">embed →</span>
+        <div class="blockwrap"><span class="cap" id="block-cap"></span><canvas id="block"></canvas></div>
+      </div>
+
+      <div class="micro">
+        <div class="mhead"><h3 id="m-title"></h3><span class="cap" id="m-sub"></span></div>
+        <div class="heads" id="heads" hidden></div>
+        <div class="strip" id="strip"></div>
+        <div class="big" id="big"></div>
+        <div class="cap" id="hover">&nbsp;</div>
+        <div class="tl" id="tl" tabindex="0" role="slider" aria-label="Position in this component's ops">
+          <div class="names" id="tl-names"></div>
+          <div class="segs" id="segs"></div>
+          <div class="mark" id="mark"></div>
+        </div>
+        <div class="mstatus" id="m-status"></div>
+        <div class="mrow">
+          <div class="code"><div class="fn" id="code-fn"></div><pre id="code"></pre></div>
+          <div class="side">
+            <div class="panel"><span class="cap">loss</span><canvas id="loss"></canvas></div>
+            <div class="panel"><span class="cap" id="sample-cap">sample</span><div class="sample" id="sample"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="generate">
+    <div class="head"><span class="eyebrow">Generate</span><h2>Prompt the 16M model</h2></div>
+    <div class="stage">
+      <form class="prompt" id="prompt">
+        <input id="prompt-text" value="The history of" aria-label="Prompt" autocomplete="off">
+        <button class="btn" id="gen-btn" disabled>Generate</button>
+      </form>
+      <div class="gen">
+        <div id="gen-out"></div>
+        <div class="bars" id="bars"></div>
+      </div>
+      <span class="cap" id="gen-stat">16M parameters, pretrained on OpenWebText with matrixgrad</span>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="src/main.js"></script>
+</html>

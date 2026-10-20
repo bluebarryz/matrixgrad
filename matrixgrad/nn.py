@@ -86,15 +86,24 @@ class CausalSelfAttention(Module):
         self.mask = np.triu(np.full((block_size, block_size), -np.inf), k=1) \
                       .reshape(1, 1, block_size, block_size)
 
-    def __call__(self, x):
+    def __call__(self, x, cache=None):
         B, T, C = x.shape
         qkv = self.c_attn(x).reshape(B, T, 3, self.n_head, self.head_dim)
         q = qkv[:, :, 0].swapaxes(1, 2)   # (B, n_head, T, head_dim)
         k = qkv[:, :, 1].swapaxes(1, 2)
         v = qkv[:, :, 2].swapaxes(1, 2)
 
+        # inference only: keys and values of earlier positions come from the cache
+        past = 0
+        if cache is not None:
+            if cache:
+                past = cache['k'].shape[2]
+                k = Matrix(np.concatenate([cache['k'], k.data], axis=2))
+                v = Matrix(np.concatenate([cache['v'], v.data], axis=2))
+            cache['k'], cache['v'] = k.data, v.data
+
         scores = (q @ k.swapaxes(-1, -2)) * (self.head_dim ** -0.5)
-        scores = scores + self.mask[:, :, :T, :T]
+        scores = scores + self.mask[:, :, past:past + T, :past + T]
 
         # subtract the row max so exp can't overflow
         scores.data -= scores.data.max(axis=-1, keepdims=True)
@@ -156,8 +165,8 @@ class Block(Module):
         self.ln_2 = LayerNorm(n_embd)
         self.mlp = FeedForward(n_embd, dropout)
 
-    def __call__(self, x):
-        x = x + self.attn(self.ln_1(x))
+    def __call__(self, x, cache=None):
+        x = x + self.attn(self.ln_1(x), cache)
         x = x + self.mlp(self.ln_2(x))
         return x
 
@@ -181,14 +190,16 @@ class GPT(Module):
         else:
             self.lm_head = Linear(n_embd, vocab_size)
 
-    def __call__(self, idx, targets=None):
+    def __call__(self, idx, targets=None, caches=None):
+        """`caches`, one dict per block, makes this a continuation of the sequence cached so far."""
         B, T = idx.shape
-        assert T <= self.block_size, f"sequence length {T} > block_size {self.block_size}"
+        past = caches[0]['k'].shape[2] if caches and caches[0] else 0
+        assert past + T <= self.block_size, f"sequence length {past + T} > block_size {self.block_size}"
         tok_emb = self.wte(idx)
-        pos_emb = self.wpe(np.arange(T))
+        pos_emb = self.wpe(np.arange(past, past + T))
         x = self.drop(tok_emb + pos_emb)
-        for block in self.blocks:
-            x = block(x)
+        for block, cache in zip(self.blocks, caches or [None] * len(self.blocks)):
+            x = block(x, cache)
         x = self.ln_f(x)
         if self.tie_weights:
             logits = x @ self.wte.weight.T + self.lm_head_bias
@@ -203,22 +214,32 @@ class GPT(Module):
 
     def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
         idx = np.asarray(idx)
-        with no_grad():
-            for _ in range(max_new_tokens):
-                idx_cond = idx[:, -self.block_size:] if idx.shape[1] > self.block_size else idx
-                logits, _ = self(idx_cond)
-                logits = logits.data[:, -1, :] / temperature
-                if top_k is not None:
-                    k = min(top_k, logits.shape[-1])
-                    kth = np.partition(logits, -k, axis=-1)[:, -k]
-                    logits = np.where(logits < kth[:, None], -np.inf, logits)
-                logits -= logits.max(axis=-1, keepdims=True)
-                probs = np.exp(logits)
-                probs /= probs.sum(axis=-1, keepdims=True)
-                # cupy's random.choice needs an explicit size
-                idx_next = np.array([np.random.choice(probs.shape[-1], size=1, p=row)[0] for row in probs])
-                idx = np.concatenate([idx, idx_next[:, None]], axis=1)
-        return idx
+        steps = self.stream(idx, temperature, top_k)
+        new = [next(steps)[0] for _ in range(max_new_tokens)]
+        return np.concatenate([idx, np.stack(new, axis=1)], axis=1)
+
+    def stream(self, idx, temperature=1.0, top_k=None):
+        """Yields (next ids, probs) forever, feeding each step only the new token through a KV cache."""
+        idx, caches = np.asarray(idx), None
+        while True:
+            if caches is None or caches[0]['k'].shape[2] == self.block_size:
+                # (re)fill the cache, keeping the last half window once the context is full
+                caches = [{} for _ in self.blocks]
+                x = idx[:, -self.block_size // 2:] if idx.shape[1] >= self.block_size else idx
+            with no_grad():
+                logits, _ = self(x, caches=caches)
+            logits = logits.data[:, -1, :] / temperature
+            if top_k is not None:
+                k = min(top_k, logits.shape[-1])
+                kth = np.partition(logits, -k, axis=-1)[:, -k]
+                logits = np.where(logits < kth[:, None], -np.inf, logits)
+            logits -= logits.max(axis=-1, keepdims=True)
+            probs = np.exp(logits)
+            probs /= probs.sum(axis=-1, keepdims=True)
+            # cupy's random.choice needs an explicit size
+            x = np.array([[np.random.choice(probs.shape[-1], size=1, p=row)[0]] for row in probs])
+            idx = np.concatenate([idx, x], axis=1)
+            yield x[:, 0], probs
 
     def parameters(self):
         params = self.wte.parameters() + self.wpe.parameters() + self.ln_f.parameters()
