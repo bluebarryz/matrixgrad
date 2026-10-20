@@ -6,7 +6,7 @@ const span = (cls, text) => Object.assign(document.createElement('span'), { clas
 const mb = n => `${Math.round(n / 1e6)} MB`;
 
 export function createGenerate(el, worker, { onStart, onEnd }) {
-  let enc, loading = false, running = false, times = [];
+  let enc, loading = false, running = false, times = [], partial = [];
 
   async function load() {
     if (loading) return;
@@ -45,6 +45,7 @@ export function createGenerate(el, worker, { onStart, onEnd }) {
     running = true;
     onStart();
     times = [];
+    partial = [];
     el.button.textContent = 'Stop';
     el.out.replaceChildren(span('p', el.input.value));
     worker.postMessage({ type: 'generate', ids: enc.encode(el.input.value), n: TOKENS });
@@ -57,7 +58,13 @@ export function createGenerate(el, worker, { onStart, onEnd }) {
       el.button.disabled = false;
     },
     token(m) {
-      el.out.append(span('t', enc.decode([m.token])));
+      // byte-level BPE can split one character across tokens; hold them until it decodes whole
+      partial.push(m.token);
+      const text = enc.decode(partial);
+      if (!text.endsWith('\uFFFD')) {
+        el.out.append(span('t', text));
+        partial = [];
+      }
       bars(m);
       times.push(m.ms);
       el.stat.textContent = `${Math.round(times.reduce((a, b) => a + b) / times.length)} ms/token · KV cache`;
